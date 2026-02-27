@@ -2,8 +2,8 @@ import json
 import urllib.request
 import ssl
 from sqlalchemy.orm import Session
-from backend.database import engine, Base, SessionLocal
-from backend import models
+from database import engine, Base, SessionLocal
+import models
 import os
 
 STATIONS_URL = "https://raw.githubusercontent.com/datameet/railways/master/stations.json"
