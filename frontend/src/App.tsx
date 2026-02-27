@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { Search, Train, ArrowRight, Clock, Banknote, Calendar, Zap, AlertCircle } from 'lucide-react'
 import axios from 'axios'
 
-const API_URL = "http://localhost:8000/api"
+const API_URL = "https://railconnect-ofqg.onrender.com/api"
 
 type Leg = {
     train_number: string

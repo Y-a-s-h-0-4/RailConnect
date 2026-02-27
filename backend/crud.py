@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
 from sqlalchemy import or_
-from . import models, schemas
+import models, schemas
 
 def resolve_station_code(db: Session, search_term: str):
     if not search_term: return None

@@ -1,7 +1,7 @@
 from fastapi import FastAPI, Depends, HTTPException
 from sqlalchemy.orm import Session
-from . import models, schemas, crud
-from .database import engine, Base, SessionLocal
+import models, schemas, crud
+from database import engine, Base, SessionLocal
 from fastapi.middleware.cors import CORSMiddleware
 
 Base.metadata.create_all(bind=engine)
@@ -34,6 +34,6 @@ def read_stations(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)
 
 @app.get("/api/routes")
 def get_routes(source: str, destination: str, date: str, criteria: str = "fastest", switches: str = "0,1", db: Session = Depends(get_db)):
-    from . import graph
+    import graph
     routes = graph.find_routes(db, source=source, destination=destination, date_str=date, criteria=criteria, switches=switches)
     return {"routes": routes}

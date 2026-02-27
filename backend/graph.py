@@ -1,8 +1,8 @@
 from sqlalchemy.orm import Session
 from sqlalchemy import text
 from datetime import datetime, timedelta
-from . import crud
-from . import models
+import crud
+import models
 
 def time_to_mins(t_str: str) -> int:
     if t_str == "None" or not t_str: return 0
