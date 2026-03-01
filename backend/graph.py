@@ -3,6 +3,49 @@ from sqlalchemy import text
 from datetime import datetime, timedelta
 import crud
 import models
+import os
+import boto3
+import json
+from dotenv import load_dotenv
+
+load_dotenv()
+
+dynamodb = None
+cache_table = None
+try:
+    if os.getenv('AWS_ACCESS_KEY_ID'):
+        dynamodb = boto3.resource(
+            'dynamodb',
+            region_name=os.getenv('AWS_REGION'),
+            aws_access_key_id=os.getenv('AWS_ACCESS_KEY_ID'),
+            aws_secret_access_key=os.getenv('AWS_SECRET_access_KEY', os.getenv('AWS_SECRET_ACCESS_KEY'))
+        )
+        cache_table = dynamodb.Table("RailConnectCache")
+except Exception as e:
+    print("AWS DynamoDB init failed:", e)
+
+def offset_cached_dates(route_obj, target_date_str):
+    target_date = datetime.strptime(target_date_str, "%Y-%m-%d")
+    base_date = datetime(2024, 1, 1)
+    diff_days = (target_date - base_date).days
+    
+    def traverse_and_add(obj):
+        if isinstance(obj, dict):
+            for k, v in obj.items():
+                if isinstance(v, str) and len(v) == 19:
+                    try:
+                        dt = datetime.strptime(v, "%Y-%m-%d %H:%M:%S")
+                        obj[k] = (dt + timedelta(days=diff_days)).strftime("%Y-%m-%d %H:%M:%S")
+                    except ValueError:
+                        pass
+                else:
+                    traverse_and_add(v)
+        elif isinstance(obj, list):
+            for item in obj:
+                traverse_and_add(item)
+
+    traverse_and_add(route_obj)
+    return route_obj
 
 def time_to_mins(t_str: str) -> int:
     if t_str == "None" or not t_str: return 0
@@ -35,6 +78,18 @@ def find_routes(db: Session, source: str, destination: str, date_str: str = "202
 
     source = source_code
     destination = dest_code
+    
+    # --- 0. Try AWS Cache First ---
+    if cache_table:
+        try:
+            path_id = f"{source}-{destination}"
+            response = cache_table.get_item(Key={'PathID': path_id})
+            if 'Item' in response:
+                print(f"CACHE HIT on AWS for {path_id}!")
+                cached_json = json.loads(response['Item']['Routes'])
+                return offset_cached_dates(cached_json, date_str)
+        except Exception as e:
+            print(f"AWS Cache Read Failed: {e}")
     
     switches_list = []
     if switches == "all":
